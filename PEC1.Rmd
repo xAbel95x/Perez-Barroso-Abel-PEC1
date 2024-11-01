@@ -1,0 +1,304 @@
+---
+title: "Informe"
+author: "Abel Pérez Barroso"
+date: "2024-11-06"
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("C:/Users/Administrador/Desktop/UOC/Repositorio Git/metaboData/Datasets/2024-Cachexia")
+paquetes <- c("readr", "Biobase", "SummarizedExperiment", "dplyr", "ggplot2", "tidyr", "grDevices")
+for (paquete in paquetes) {
+  if (!requireNamespace(paquete, quietly = TRUE)) {
+    install.packages(paquete, dependencies = TRUE)
+  }
+  library(paquete, character.only = TRUE)
+}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+BiocManager::install(c("Biobase", "SummarizedExperiment"))
+library(readr)
+library(Biobase)
+library(SummarizedExperiment)
+library(dplyr)
+library(grDevices)
+library(ggplot2)
+library(tidyr)
+human_cachexia <- read_csv("human_cachexia.csv")
+```
+
+# Abstract
+
+La caquexia es un síndrome caracterizado por la pérdidad de peso, tanto masa muscular como de grasa, acompañada de debilidad extrema y fatiga.
+
+En este informe se analizó el dataset *2024-Cachexia* para identificar diferencias significativas en las concentraciones de metabolitos entre el grupo control y el grupo con caquexia, con el objetivo de destacar potenciales biomarcadores asociados a la caquexia.
+
+Primero, se empleó la estructura `SummarizedExperiment` para crear un contenedor que incluye tanto los datos como los metadatos, asegurando la integridad de la información para los siguientes análisis. Luego, se realizó una exploración inicial de los datos y un control de calidad preliminar, seguido de la normalización de las concentraciones de los metabolitos, tras lo cual se aplicó un segundo control de calidad sobre los datos normalizados.
+
+Como paso final, se llevó a cabo un análisis de componentes principales (PCA) tanto para el dataset completo como para los datos segmentados en los grupos de caquexia y control. A través de gráficos de barras y otros métodos visuales, se lograron identificar diferencias en la distribución de las concentraciones de los metabolitos, destacando aquellos con mayor variabilidad entre ambos grupos.
+
+\newpage
+
+# Objetivo del estudio
+
+El objetivo principal del estudio en el análisis del dataset de *2024-Cachexia* es identificar los metabolitos que más influyen en la caquexia. Para ello, se emplearán gráficos de barras, heatmaps y boxplots para observar las diferencias y la variabilidad de los metabolitos en el contexto del análisis de componentes principales (PCA).
+
+# Materiales y métodos
+
+El análisis se basa en el dataset *2024-Cachexia*, obtenido de [<https://github.com/nutrimetabolomics/metaboData/tree/main/Datasets/2024-Cachexia>]. En este conjunto de datos se observan a 77 pacientes separados en dos grupos, uno con cachexia y un control, y las concentraciones de varios metabolitos en su cuerpo.
+
+## Herramientas utilizadas
+
+Para el análisis de los datos se ha utilizado Rsdtudio y el lenguaje de programación R, junto con diferentes paquetes como:
+
+\- `readr`: paquete que nos permite la importación de datos en formato CSV.
+
+\- `Biobase`: para el manejo de objetos de clase `ExpressionSet`.
+
+\- `SummarizedExperiment`: paquete que nos permite integrar datos en un solo objeto.
+
+\- `ggplot2`: para la visualización de datos en formato de gráficos.
+
+\- `dplyr` y `tidyr`: para la manipulación y transformación de datos.
+
+\- `grDevices`: para la personalización de colores en heatmap.
+
+## Procedimiento del análisis
+
+Como primer paso, se importaron los datos a R utilizando las funciones `setwd()` y `read_csv()` del paquete `readr`. Posteriormente, se creó un objeto `SummarizedExperiment` para organizar y estructurar los datos metabólicos junto con sus metadatos.
+
+A continuación, se verificó la presencia de datos faltantes, que se eliminaron en caso de ser necesario, y se procedió con la normalización de los datos para asegurar su consistencia en los análisis posteriores.
+
+Finalmente, se realizaron los análisis exploratorios y de componentes principales (PCA), y se visualizó la información mediante la generación de gráficos, incluyendo gráficos de barras, boxplots y heatmaps.
+
+## Métodos utilizados
+
+1.  **Importación y organización de los datos:**
+
+-   Los datos fueron importados y organizados utilizando las funciones `setwd()` para establecer el directorio de trabajo y `read_csv()` del paquete `readr` para cargar los datos en R. Con esta importación inicial se nos permite el inicio en el manejo de los datos.
+
+2.  **Creación del objeto `SummarizedExperiment`:**
+
+-   Los datos importados se encapsularon en un objeto `SummarizedExperiment`, que facilita el manejo de conjuntos de datos complejos agrupando las mediciones metabólicas en un único contenedor.
+
+3.  **Limpieza y prepocesamiento:**
+
+-   Se realizó una primera evaluación para observar si habia datos faltantes y su posterior eliminación si fuera necesario. La normalización de los datos se llevó a cabo para asegurar que las mediciones de los metabólitos fueran comparables entre sí y listas para su posterior análisis. Se hizo un control de calidad antes y después de su normalización.
+
+4.  **Análisis y visualización de datos:**
+
+-   Se emplearon técnicas de visualización y análisis a partir de PCA para observar los resultados del análisis.
+
+5.  **Resultados y conclusión:**
+
+-   Finalmente se observaron los resultados obtenidos y se obtuvo una conclusión respecto a estos.
+
+\newpage
+
+# Resultados
+
+## Introducción a los resultados
+
+A continuación, se procedera a observar los resultados obtenidos del análisis de datos y los procedimientos que se han utilizado como son el control de calidad (antes y después de la normalización), análisis de PCA y gráficos.
+
+## Observación preliminar
+
+```{r include=FALSE}
+human_cachexia_df <- as.data.frame(human_cachexia)
+datos_todo <- human_cachexia_df[, -c(1, 2)]
+datos_cachexia <- subset(human_cachexia_df, `Muscle loss` == "cachexic")[, -c(1, 2)]
+datos_control <- subset(human_cachexia_df, `Muscle loss` == "control")[, -c(1, 2)]
+Muscle_loss <- ifelse(human_cachexia_df$`Muscle loss` == "cachexic", 0, 1)
+datos_todo_norm <- scale(datos_todo)
+datos_todo_normalizados <- cbind(human_cachexia_df[, c(1, 2)], datos_todo_norm)
+datos_cachexia_norm <- scale(datos_cachexia)
+datos_control_norm <- scale(datos_control)
+datos_cachexia_norm <- as.data.frame(datos_cachexia_norm)
+datos_control_norm <- as.data.frame(datos_control_norm)
+```
+
+```{r}
+hist(Muscle_loss, 
+     main = "Histograma Pacientes",  
+     xlab = "Grupos",               
+     ylab = "Pacientes",
+     breaks = 2)
+```
+
+En el gráfico previamente mostrado se observa en un histograma con la cantidad de pacientes con cachexia y los del grupo control.
+
+```{r}
+par(mfrow=c(2,2))
+hist(datos_cachexia$Creatinine, 
+     main = "Histograma de Creatinina Caquexia", 
+     xlab = "Nivel de Creatinina",        
+     ylab = "Frecuencia",                  
+     breaks = 10)
+hist(datos_control$Creatinine, 
+     main = "Histograma de Creatinina Control", 
+     xlab = "Nivel de Creatinina",        
+     ylab = "Frecuencia",                  
+     breaks = 10)
+hist(datos_cachexia_norm$Creatinine, 
+     main = "Histograma de Creatinina Normalizado Caquexia", 
+     xlab = "Nivel de Creatinina",        
+     ylab = "Frecuencia",                  
+     breaks = 10)
+hist(datos_control_norm$Creatinine, 
+     main = "Histograma de Creatinina Normalizado Control", 
+     xlab = "Nivel de Creatinina",        
+     ylab = "Frecuencia",                  
+     breaks = 10)
+
+```
+
+En los gráficos previamente mostrados se observan cuatro histogramas del metabolito creatinina, donde podemos observar los datos previos y posteriores a la normalizacion de los datos tanto del grupo control como del grupo con cachexia.
+
+Al observar ambos gráficos de los grupos podemos ver que la normalización de los datos es correcta, puesto que estos siguen teniendo un gran parecido entre ellos.
+
+Gracias a esta confirmación podemos comenzar con el análisis de los datos.
+
+## Observaciones y resultados
+
+### Correlación
+
+En este análisis, hemos generado tres mapas de calor (heatmaps) que representan la matriz de correlación de diferentes metabolitos en tres conjuntos de datos:
+
+1.  Todos los pacientes.
+
+<!-- -->
+
+2.  Pacientes con cachexia.
+
+<!-- -->
+
+3.  Pacientes control.
+
+Cada heatmap permite visualizar cómo se relacionan entre sí los metabolitos dentro de cada grupo, lo que nos ayuda a entender patrones metabólicos.
+
+```{r include=FALSE}
+paleta_cor <- colorRampPalette(c("blue", "white", "red"))(256)
+cor_todo <- cor(datos_todo_norm)
+cor_cachexia <- cor(datos_cachexia_norm)
+cor_control <- cor(datos_control_norm)
+```
+
+```{r}
+heatmap(cor_todo, main = "Correlación de Metabolitos", 
+        Colv = NA, Rowv = NA, scale = "none", margins = c(5, 5),col = paleta_cor)
+heatmap(cor_cachexia, main = "Correlación de Metabolitos Cachexia", 
+        Colv = NA, Rowv = NA, scale = "none", margins = c(5, 5), col = paleta_cor)
+heatmap(cor_control, main = "Correlación de Metabolitos Control", 
+        Colv = NA, Rowv = NA, scale = "none", margins = c(5, 5), col = paleta_cor)
+```
+
+En los tres heatmaps observamos diferentes patrones de correlación entre metabolitos. En el primer y segundo gráfico, que corresponden a todos los pacientes y a los pacientes con caquexia, respectivamente, predominan los tonos azulados, lo que sugiere correlaciones bajas o negativas entre los metabolitos. En cambio, el tercer heatmap, que representa al grupo de control, muestra tonos más rojizos, lo que indica correlaciones positivas más fuertes entre varios metabolitos.
+
+Este patrón sugiere que, en el grupo de control, los metabolitos tienden a aumentar o disminuir en sincronía, reflejando un sistema metabólico más estable. En contraste, en el grupo de caquexia, las correlaciones son más bajas y variadas, lo que podría indicar una disrupción en la regulación metabólica. Esto implica que, mientras en los controles ciertos metabolitos aumentan junto con otros, en los pacientes con caquexia estos patrones son menos consistentes e incluso opuestos en algunos casos, reflejando posibles desbalances asociados con la enfermedad.
+
+### Análisis de componentes principales (PCA)
+
+```{r include=FALSE}
+pca_todo <- prcomp(datos_todo_norm)
+varianza_acumulada <- cumsum(pca_todo$sdev^2 / sum(pca_todo$sdev^2)) * 100
+pca_scores <- pca_todo$x
+var_todo <- pca_todo$sdev^2 / sum(pca_todo$sdev^2) * 100
+```
+
+```{r}
+summary(pca_todo)
+pca_todo$rotation[order(pca_todo$rotation[,1], decreasing = TRUE), 1]
+pca_todo$rotation[order(pca_todo$rotation[,2], decreasing = TRUE), 1]
+```
+
+Al analizar las componentes principales (PCA) para reducir la dimensionalidad de los datos metabólicos, podemos observar los metabolitos que más contribuyen a la variabilidad de los datos en pacientes con caquexia.
+
+En la primera componente principal (PC1), se destacan metabolitos con mayores cargas, incluyendo la alanina, creatinina, glutamina, valina y serina. Esto sugiere que estos metabolitos están fuertemente asociados con variaciones en el metabolismo de personas con caquexia. Por ejemplo, el aumento en creatinina y alanina es común en situaciones de atrofia o degradación muscular, características comunes en esta condición.
+
+En la segunda componente principal (PC2) se observan otros metabolitos como el succinato, 3-hidroxisovalerato, 3-indoxilsulfato y cis-aconitato. Estos metabolitos están relacionados con procesos de energía celular. Las elevadas cargas de estos metabolitos indican una alteración en el metabolismo energético, un aspecto distintivo en el síndrome de la caquexia.
+
+Observando ambas componentes principales, se evidencia que estos metabolitos están altamente relacionados con el metabolismo muscular y energético. Dado que la caquexia está caracterizada por estos desajustes metabólicos, los metabolitos antes mencionados podrían utilizarse como biomarcadores para identificar y monitorear a pacientes con esta condición.
+
+```{r}
+barplot(pca_todo$sdev^2 / sum(pca_todo$sdev^2) * 100,
+        main = "Varianza Componentes",
+        xlab = "Componente Principal",
+        ylab = "Varianza (%)",
+        col = "lightblue")
+```
+
+```{r echo=FALSE}
+print(varianza_acumulada)
+```
+
+En el gráfico de barras observamos la varianza de las diferentes componentes principales junto a su varianza acumulada, indicando el porcentaje total de varianza al ir suamndo componentes.
+
+```{r}
+plot(pca_scores[, 1:2], 
+     col = ifelse(human_cachexia_df$`Muscle loss` == "cachexic", "red", "green"),
+     pch = 19, 
+     xlab = paste0("Componente Principal 1 (", round(var_todo[1], 2), "%)"), 
+     ylab = paste0("Componente Principal 2 (", round(var_todo[2], 2), "%)"),
+     main = "PCA: Primeros Dos Componentes Principales")
+legend("topright", legend = c("Cachexia", "Control"), col = c("red", "green"), pch = 19)
+```
+
+En el gráfico de componentes principales (PCA), se presenta una comparación visual entre los grupos de pacientes con caquexia y los controles.
+
+Los puntos correspondientes a los pacientes control (marcados en verde) se encuentran fuertemente agrupados hacia la parte izquierda del gráfico. Esta agrupación indica que los individuos sin caquexia comparten perfiles metabólicos similares, lo que sugiere un estado metabólico relativamente homogéneo y saludable.
+
+Por otro lado, los pacientes con caquexia (marcados en rojo) están distribuidos de manera más dispersa hacia la derecha. Esta dispersión podría reflejar una variabilidad en sus perfiles metabólicos, lo que es característico de la caquexia. La posición de los puntos rojos en esta área del gráfico sugiere que estos pacientes presentan niveles más altos de ciertos metabolitos que están relacionados con el metabolismo muscular y energético, los cuales se encuentran alterados en el contexto del síndrome de caquexia.
+
+### Comparativa de metabolitos caquexia y control
+
+```{r include=FALSE}
+totales_cachexia <- colSums(datos_cachexia)
+totales_control <- colSums(datos_control)
+head(sort(totales_cachexia, decreasing = TRUE))
+head(sort(totales_control, decreasing = TRUE))
+comparacion_metabolitos <- data.frame(
+  Metabolito = names(totales_cachexia),
+  Cachexia = totales_cachexia,
+  Control = totales_control
+)
+comparacion_larga <- comparacion_metabolitos %>%
+  pivot_longer(cols = -Metabolito, 
+               names_to = "Grupo", 
+               values_to = "Cantidad")
+```
+
+```{r}
+ggplot(comparacion_larga, aes(x = Metabolito, y = Cantidad, fill = Grupo)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Comparación de Concentración de Metabolitos entre Cachexia y Control",
+       x = "Metabolito",
+       y = "Concentración") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = c("Cachexia" = "red", "Control" = "blue")) 
+```
+
+En este gráfico, se presenta una comparativa de las cantidades normalizadas de los diferentes metabolitos entre el grupo de pacientes con caquexia y el grupo de control. A simple vista, se puede observar que las concentraciones de metabolitos en los pacientes con caquexia son significativamente más elevadas que en el grupo de control. Esta diferencia resalta el desajuste metabólico que el síndrome de caquexia provoca en el organismo humano, lo que puede tener implicaciones importantes para la salud y el manejo clínico de estos pacientes.
+
+# Discusión y limitaciones
+
+En este estudio, hemos llevado a cabo un análisis de componentes principales (PCA) para explorar la variabilidad metabólica en pacientes con caquexia en comparación con un grupo control. A través de este enfoque, hemos identificado metabolitos clave que contribuyen a las diferencias observadas en los perfiles metabólicos entre los dos grupos. Sin embargo, es fundamental reconocer varias limitaciones que podrían afectar la interpretación de los resultados.
+
+Primero, el tamaño de la muestra, aunque suficiente para algunas pruebas estadísticas, puede no ser representativo de la población general de pacientes con caquexia. Esto limita la generalización de los hallazgos. Además, el análisis se basa en datos obtenidos de un único momento, mientras que los organismos son dinámicos y varian en el tiempo.
+
+Otra limitación se encuentra en la técnica de análisis utilizada. Aunque la PCA es efectiva para reducir la dimensionalidad y destacar patrones en los datos, no proporciona información sobre la causa o la interrelación entre los metabolitos.
+
+# Conclusión
+
+A pesar de las limitaciones, el estudio ha permitido una exploración inicial de las diferencias metabólicas entre pacientes con caquexia y controles sanos. La identificación de metabolitos como la alanina, creatinina, y otros que se presentan en niveles elevados en el grupo de caquexia sugiere la existencia de un perfil metabólico distintivo asociado con esta condición.
+
+Estos resultados respaldan la hipótesis de que el síndrome de caquexia altera el metabolismo musuclar y energético y abre puertas a futuras investigaciones sobre posibles biomarcadores para la identificación y monitoreo de la caquexia.
+
+## Repositorio de github
+
+Dirección url: [https://github.com/xAbel95x/Perez-Barroso-Abel-PEC1.git]
